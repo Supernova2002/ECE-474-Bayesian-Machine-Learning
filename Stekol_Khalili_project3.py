@@ -159,6 +159,61 @@ for sample in class2_test:
     total_seen += 1
 print(f"Percent classification is {100*total_correct/total_seen} % ")
 
+# %%
+# Prepare test set and scores
+import numpy as np
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+# X_test: N x 2, y_test: N (1 for class1, 0 for class2)
+X_test = np.vstack((class1_test, class2_test))
+y_test = np.hstack((np.ones(len(class1_test)), np.zeros(len(class2_test))))
+
+# raw scores (decision function) and probabilities
+scores = X_test @ w_logit           # shape (N,)
+probs = expit(scores)                # probabilities in (0,1)
+
+# Compute ROC
+fpr, tpr, thresholds = roc_curve(y_test, scores)  # use scores or probs
+roc_auc = auc(fpr, tpr)
+
+# Plot ROC
+plt.figure(figsize=(6,6))
+plt.plot(fpr, tpr, label=f'ROC curve (AUC = {roc_auc:.3f})')
+plt.plot([0,1], [0,1], 'k--', alpha=0.5)
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.show()
+
+# Plot decision boundary over feature space
+h = 0.02  # mesh step size
+x_min, x_max = X_test[:,0].min() - 1, X_test[:,0].max() + 1
+y_min, y_max = X_test[:,1].min() - 1, X_test[:,1].max() + 1
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+grid = np.c_[xx.ravel(), yy.ravel()]
+Z_scores = grid @ w + w_0
+Z = expit(Z_scores).reshape(xx.shape)
+
+plt.figure(figsize=(6,6))
+# contour at probability 0.5 -> decision boundary
+cs = plt.contour(xx, yy, Z, levels=[0.5], colors='k', linewidths=2)
+plt.contourf(xx, yy, Z, levels=20, cmap='RdBu', alpha=0.3)
+
+# scatter points
+plt.scatter(class1_samples[:,0], class1_samples[:,1], c='tab:blue', edgecolor='k', label='class1 (train)', alpha=0.6)
+plt.scatter(class2_samples[:,0], class2_samples[:,1], c='tab:orange', edgecolor='k', label='class2 (train)', alpha=0.6)
+plt.scatter(class1_test[:,0], class1_test[:,1], c='tab:blue', marker='x', label='class1 (test)')
+plt.scatter(class2_test[:,0], class2_test[:,1], c='tab:orange', marker='x', label='class2 (test)')
+
+plt.xlabel('x1')
+plt.ylabel('x2')
+plt.title('Decision Boundary and Data')
+plt.legend()
+plt.show()
+
 # %% [markdown]
 # The dataset we am testing on is the wisconsin breast cancer dataset from https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic
 
